@@ -9,14 +9,22 @@
 
 ## Branches
 
-- `main` — working endpoints only (13 tools confirmed against v1.1.7)
-- `all-endpoints` — full 46-tool implementation; re-enable tools here as upstream ReadMeABook auth is fixed
+- `main` — 9 confirmed-working tools (allowlisted or public routes only)
+- `all-endpoints` — full 46-tool implementation; activate once ReadMeABook's API token allowlist is expanded
 
-## Known broken endpoints (v1.1.7)
+## Why most endpoints are blocked
 
-- **401** Authors and series routes (`/authors/*`, `/series/*`) — Audible credential issue server-side
-- **403** All user-scoped routes except `GET /requests` — auth middleware applied inconsistently
-- **403** All admin routes except `/admin/metrics` and `/admin/downloads/active`
+ReadMeABook enforces a hardcoded API token allowlist in `src/lib/constants/api-tokens.ts`.
+Only these 5 endpoints are permitted for API token auth:
+- `GET /api/auth/me`
+- `GET /api/requests`
+- `GET /api/admin/metrics`
+- `GET /api/admin/downloads/active`
+- `GET /api/admin/requests/recent`
+
+All other endpoints return 403. Audiobook browse/search endpoints work because they are
+**public routes** that require no auth. To unlock write operations, the ReadMeABook allowlist
+must be expanded — this is an upstream change in ReadMeABook, not something we can fix here.
 
 ## Build & test
 
