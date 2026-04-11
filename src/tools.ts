@@ -15,10 +15,6 @@ function str(args: ToolArgs, key: string): string {
   return args[key] as string;
 }
 
-function optBool(args: ToolArgs, key: string): boolean | undefined {
-  return args[key] as boolean | undefined;
-}
-
 // ---------------------------------------------------------------------------
 // Handlers
 //
@@ -53,17 +49,10 @@ export const toolHandlers: Record<string, ToolHandler> = {
   get_popular_audiobooks: (client) => client.getPopularAudiobooks(),
   get_new_releases: (client) => client.getNewReleases(),
 
-  // Requests — get_requests (list) confirmed working; write tools untested but
-  // grouped here as the only functional workflow path
+  // Requests — only GET /api/requests is in the API token allowlist.
+  // All POST endpoints and GET /api/requests/:id are blocked by the allowlist in
+  // src/lib/constants/api-tokens.ts in the ReadMeABook source.
   get_requests: (client) => client.getRequests(),
-  create_request: (client, args) =>
-    client.createRequest(str(args, "asin"), optBool(args, "auto_search") ?? true),
-  delete_request: (client, args) => client.deleteRequest(str(args, "id")),
-  manual_search_request: (client, args) => client.manualSearchRequest(str(args, "id")),
-  search_torrents: (client, args) =>
-    client.searchTorrents(str(args, "asin"), str(args, "title"), str(args, "author")),
-  select_torrent: (client, args) =>
-    client.selectTorrent(str(args, "request_id"), str(args, "torrent_id")),
 
   // Admin — only these two confirmed working
   admin_get_metrics: (client) => client.adminGetMetrics(),
@@ -163,113 +152,6 @@ export const toolDefinitions = [
       "processing | downloaded | available | failed | cancelled | awaiting_search | awaiting_import | warn), " +
       "progress (0–100), createdAt (ISO 8601), updatedAt (ISO 8601), errorMessage.",
     inputSchema: { type: "object", properties: {}, required: [] },
-  },
-  {
-    name: "create_request",
-    description:
-      "Request an audiobook for download by its Audible ASIN. " +
-      "With auto_search=true (default), ReadMeABook immediately queries Prowlarr indexers and " +
-      "starts the download if a match is found. Set auto_search=false to queue the request " +
-      "without searching (useful if you want to call manual_search_request later). " +
-      "Returns the created request object including its id and initial status.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        asin: {
-          type: "string",
-          description: 'Audible ASIN of the book to request. Example: "B08G9PRS1K"',
-        },
-        auto_search: {
-          type: "boolean",
-          description:
-            "If true (default), triggers an immediate Prowlarr search and download. " +
-            "Set false to create the request without searching yet.",
-        },
-      },
-      required: ["asin"],
-    },
-  },
-  {
-    name: "delete_request",
-    description:
-      "Cancel and permanently delete an audiobook request. " +
-      "If a download is in progress it will be stopped. This cannot be undone.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        id: {
-          type: "string",
-          description: 'Request UUID from get_requests. Example: "95996919-f295-4e62-8525-0706e18d6b74"',
-        },
-      },
-      required: ["id"],
-    },
-  },
-  {
-    name: "manual_search_request",
-    description:
-      "Trigger a fresh Prowlarr indexer search for an existing request. " +
-      "Use this when a request is stuck in 'searching' or 'failed' status. " +
-      "Returns the updated request object. If results are found, the best match " +
-      "is automatically selected and the download starts.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        id: {
-          type: "string",
-          description: 'Request UUID from get_requests. Example: "95996919-f295-4e62-8525-0706e18d6b74"',
-        },
-      },
-      required: ["id"],
-    },
-  },
-  {
-    name: "search_torrents",
-    description:
-      "Search Prowlarr indexers for torrent/NZB sources for a specific audiobook. " +
-      "Returns an array of results each containing: id, indexer, title, size (bytes), " +
-      "seeders, leechers, qualityScore, downloadUrl. " +
-      "Typically called after create_request fails to find a source automatically. " +
-      "Pass the result id to select_torrent to trigger the download.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        asin: {
-          type: "string",
-          description: 'Audible ASIN. Example: "B08G9PRS1K"',
-        },
-        title: {
-          type: "string",
-          description: 'Exact audiobook title from Audible metadata. Example: "Project Hail Mary"',
-        },
-        author: {
-          type: "string",
-          description: 'Primary author name. Example: "Andy Weir"',
-        },
-      },
-      required: ["asin", "title", "author"],
-    },
-  },
-  {
-    name: "select_torrent",
-    description:
-      "Manually select a specific torrent/NZB result to download for a request. " +
-      "Call search_torrents first to get the torrent_id. " +
-      "Returns the updated request object with status changing to 'downloading'.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        request_id: {
-          type: "string",
-          description: 'Request UUID from get_requests. Example: "95996919-f295-4e62-8525-0706e18d6b74"',
-        },
-        torrent_id: {
-          type: "string",
-          description: "Torrent/NZB result id from search_torrents output.",
-        },
-      },
-      required: ["request_id", "torrent_id"],
-    },
   },
 
   // ── Admin ─────────────────────────────────────────────────────────────────

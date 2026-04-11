@@ -15,11 +15,6 @@ function makeClient(): ReadMeABookClient {
     getPopularAudiobooks: vi.fn().mockResolvedValue([]),
     getNewReleases: vi.fn().mockResolvedValue([]),
     getRequests: vi.fn().mockResolvedValue([]),
-    createRequest: vi.fn().mockResolvedValue({}),
-    deleteRequest: vi.fn().mockResolvedValue({}),
-    manualSearchRequest: vi.fn().mockResolvedValue({}),
-    searchTorrents: vi.fn().mockResolvedValue([]),
-    selectTorrent: vi.fn().mockResolvedValue({}),
     adminGetMetrics: vi.fn().mockResolvedValue({}),
     adminGetActiveDownloads: vi.fn().mockResolvedValue([]),
   } as unknown as ReadMeABookClient;
@@ -74,47 +69,6 @@ describe("toolHandlers", () => {
   it("get_requests delegates to client", async () => {
     await toolHandlers.get_requests(client, {});
     expect(client.getRequests).toHaveBeenCalledOnce();
-  });
-
-  it("create_request passes asin and auto_search", async () => {
-    await toolHandlers.create_request(client, { asin: "B08G9PRS1K", auto_search: false });
-    expect(client.createRequest).toHaveBeenCalledWith("B08G9PRS1K", false);
-  });
-
-  it("create_request defaults auto_search to true when omitted", async () => {
-    await toolHandlers.create_request(client, { asin: "B08G9PRS1K" });
-    expect(client.createRequest).toHaveBeenCalledWith("B08G9PRS1K", true);
-  });
-
-  it("delete_request passes id", async () => {
-    await toolHandlers.delete_request(client, { id: "req-uuid" });
-    expect(client.deleteRequest).toHaveBeenCalledWith("req-uuid");
-  });
-
-  it("manual_search_request passes id", async () => {
-    await toolHandlers.manual_search_request(client, { id: "req-uuid" });
-    expect(client.manualSearchRequest).toHaveBeenCalledWith("req-uuid");
-  });
-
-  it("search_torrents passes asin, title, author", async () => {
-    await toolHandlers.search_torrents(client, {
-      asin: "B08G9PRS1K",
-      title: "Project Hail Mary",
-      author: "Andy Weir",
-    });
-    expect(client.searchTorrents).toHaveBeenCalledWith(
-      "B08G9PRS1K",
-      "Project Hail Mary",
-      "Andy Weir"
-    );
-  });
-
-  it("select_torrent passes request_id and torrent_id", async () => {
-    await toolHandlers.select_torrent(client, {
-      request_id: "req-uuid",
-      torrent_id: "torrent-id",
-    });
-    expect(client.selectTorrent).toHaveBeenCalledWith("req-uuid", "torrent-id");
   });
 
   it("admin_get_metrics delegates to client", async () => {

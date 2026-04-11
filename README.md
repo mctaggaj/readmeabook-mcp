@@ -52,11 +52,6 @@ Restart Claude Code after running this command.
 
 ### Request management
 - `get_requests` — List your requests and their statuses
-- `create_request` — Request an audiobook by ASIN
-- `delete_request` — Cancel a request
-- `manual_search_request` — Trigger a fresh indexer search for a request
-- `search_torrents` — Search Prowlarr indexers for a specific audiobook
-- `select_torrent` — Select a specific torrent/NZB result to download
 
 ### Admin
 - `admin_get_metrics` — System-wide stats (requests, users, storage, uptime)
