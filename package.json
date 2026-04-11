@@ -1,0 +1,23 @@
+{
+  "name": "readmeabook-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for ReadMeABook - audiobook management automation",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "readmeabook-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0"
+  }
+}
