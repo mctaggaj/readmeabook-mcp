@@ -2,9 +2,9 @@
 
 An MCP (Model Context Protocol) server for [ReadMeABook](https://github.com/kikootwo/readmeabook) — the Radarr/Sonarr + Overseerr for audiobooks.
 
-Lets Claude (or any MCP-compatible AI client) search for audiobooks, manage requests, and monitor downloads.
+Lets Claude (or any MCP-compatible AI client) search for audiobooks, view requests, and monitor downloads.
 
-> **Note:** This server targets the confirmed-working endpoints against ReadMeABook v1.1.7. A full endpoint set (authors, series, BookDate, user preferences, and more admin tools) is available on the `all-endpoints` branch pending upstream auth fixes in ReadMeABook.
+> **Note:** ReadMeABook's API token auth is restricted to a small allowlist of endpoints (see `src/lib/constants/api-tokens.ts` in the ReadMeABook source). Only the 9 endpoints on that allowlist — or public routes — are exposed here. A full endpoint set is available on the `all-endpoints` branch for use if that allowlist is expanded.
 
 ## Setup
 
