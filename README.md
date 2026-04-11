@@ -2,7 +2,9 @@
 
 An MCP (Model Context Protocol) server for [ReadMeABook](https://github.com/kikootwo/readmeabook) — the Radarr/Sonarr + Overseerr for audiobooks.
 
-Lets Claude (or any MCP-compatible AI client) search for audiobooks, manage requests, browse recommendations, and administer your ReadMeABook instance.
+Lets Claude (or any MCP-compatible AI client) search for audiobooks, manage requests, and monitor downloads.
+
+> **Note:** This server targets the confirmed-working endpoints against ReadMeABook v1.1.7. A full endpoint set (authors, series, BookDate, user preferences, and more admin tools) is available on the `all-endpoints` branch pending upstream auth fixes in ReadMeABook.
 
 ## Setup
 
@@ -44,44 +46,19 @@ Then restart Claude Code for the server to load.
 - `get_version` — Get app version
 
 ### Audiobook discovery
-- `search_audiobooks` — Search Audible by title/author/keyword
+- `search_audiobooks` — Search Audible by title, author, or keyword
 - `get_audiobook` — Get audiobook details by ASIN
-- `get_popular_audiobooks` — Browse popular audiobooks
-- `get_new_releases` — Browse new releases
-- `get_audiobook_download_status` — Check if an audiobook is in your library
-- `search_torrents` — Search indexers for a specific audiobook
-
-### Authors & Series
-- `search_authors` / `get_author` / `get_author_books`
-- `search_series` / `get_series`
+- `get_popular_audiobooks` — Browse trending audiobooks
+- `get_new_releases` — Browse recent releases
 
 ### Request management
-- `get_requests` — List your requests
+- `get_requests` — List your requests and their statuses
 - `create_request` — Request an audiobook by ASIN
-- `get_request` — Get request status
 - `delete_request` — Cancel a request
-- `manual_search_request` — Trigger a new search for a request
-- `select_torrent` — Select a specific torrent/NZB result
+- `manual_search_request` — Trigger a fresh indexer search for a request
+- `search_torrents` — Search Prowlarr indexers for a specific audiobook
+- `select_torrent` — Select a specific torrent/NZB result to download
 
-### BookDate (AI recommendations)
-- `get_bookdate_recommendations` — Get pending AI recommendations
-- `generate_bookdate_recommendations` — Generate a new batch
-- `swipe_bookdate` — Swipe left/right/up on a recommendation
-- `undo_bookdate_swipe` — Undo last swipe
-
-### User preferences
-- `get_watched_series` / `watch_series` / `unwatch_series`
-- `get_watched_authors` / `watch_author` / `unwatch_author`
-- `get_ignored_audiobooks` / `ignore_audiobook` / `unignore_audiobook`
-- `get_api_tokens` / `create_api_token` / `delete_api_token`
-
-### Admin tools *(require admin role)*
-- `admin_get_requests` — All requests with optional status filter
-- `admin_get_pending_approval` / `admin_approve_request`
-- `admin_retry_download`
-- `admin_get_users` / `admin_get_pending_users` / `admin_approve_user` / `admin_update_user` / `admin_delete_user`
-- `admin_get_jobs` / `admin_trigger_job`
-- `admin_get_active_downloads`
-- `admin_get_logs` / `admin_get_metrics`
-- `admin_plex_scan`
-- `admin_get_reported_issues` / `admin_resolve_issue` / `admin_replace_issue`
+### Admin
+- `admin_get_metrics` — System-wide stats (requests, users, storage, uptime)
+- `admin_get_active_downloads` — Live download progress across all clients
