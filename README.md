@@ -8,9 +8,11 @@ Lets Claude (or any MCP-compatible AI client) search for audiobooks, manage requ
 
 ## Setup
 
-### 1. Install dependencies and build
+### 1. Clone and build
 
 ```bash
+git clone https://github.com/mctaggaj/readmeabook-mcp.git
+cd readmeabook-mcp
 npm install
 npm run build
 ```
@@ -19,25 +21,22 @@ npm run build
 
 In ReadMeABook, go to **User Settings → API Tokens** and create a new token.
 
-### 3. Configure Claude Code
+### 3. Register with Claude Code
 
-From your project directory, run:
+Run this from any directory — replace the URL, token, and path values:
 
 ```bash
 claude mcp add readmeabook \
   -e READMEABOOK_URL=http://your-readmeabook-host:3000 \
   -e READMEABOOK_TOKEN=your-api-token-here \
-  -- node /path/to/readmeabook-mcp/dist/index.js
+  -- node /absolute/path/to/readmeabook-mcp/dist/index.js
 ```
 
-Then restart Claude Code for the server to load.
+- `READMEABOOK_URL` — base URL of your ReadMeABook instance (e.g. `http://192.168.1.10:3000`)
+- `READMEABOOK_TOKEN` — the token you just created
+- The path must be absolute (e.g. `/Users/you/readmeabook-mcp/dist/index.js`)
 
-## Environment variables
-
-| Variable | Required | Description |
-|---|---|---|
-| `READMEABOOK_URL` | Yes | Base URL of your ReadMeABook instance |
-| `READMEABOOK_TOKEN` | Yes | API token from ReadMeABook user settings |
+Restart Claude Code after running this command.
 
 ## Available tools
 
