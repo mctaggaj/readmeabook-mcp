@@ -10,11 +10,8 @@ import type {
 
 export interface ReadMeABookConfig {
   baseUrl: string;
-  /** API token auth (limited to allowlisted endpoints) */
-  apiToken?: string;
-  /** Username/password auth — obtains a JWT that bypasses the token allowlist */
-  username?: string;
-  password?: string;
+  username: string;
+  password: string;
 }
 
 interface LoginResponse {
@@ -25,14 +22,12 @@ interface LoginResponse {
 
 export class ReadMeABookClient {
   private readonly baseUrl: string;
-  private readonly apiToken: string | undefined;
-  private readonly username: string | undefined;
-  private readonly password: string | undefined;
+  private readonly username: string;
+  private readonly password: string;
   private jwtToken: string | null = null;
 
   constructor(config: ReadMeABookConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, "");
-    this.apiToken = config.apiToken;
     this.username = config.username;
     this.password = config.password;
   }
@@ -52,24 +47,22 @@ export class ReadMeABookClient {
   }
 
   private async request<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
-    // Lazy login on first credentialed request
-    if (this.username && !this.jwtToken) {
+    if (!this.jwtToken) {
       await this.login();
     }
 
-    const token = this.jwtToken ?? this.apiToken;
     const url = `${this.baseUrl}/api${path}`;
     const response = await fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        Authorization: `Bearer ${this.jwtToken}`,
         ...options.headers,
       },
     });
 
-    // On 401 with JWT auth, re-login once and retry
-    if (response.status === 401 && this.username && !isRetry) {
+    // On 401, re-login once and retry
+    if (response.status === 401 && !isRetry) {
       this.jwtToken = null;
       await this.login();
       return this.request<T>(path, options, true);

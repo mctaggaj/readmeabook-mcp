@@ -14,7 +14,6 @@ import { toolDefinitions, toolHandlers } from "./tools.js";
 // ---------------------------------------------------------------------------
 
 const BASE_URL = process.env.READMEABOOK_URL;
-const API_TOKEN = process.env.READMEABOOK_TOKEN;
 const USERNAME = process.env.READMEABOOK_USERNAME;
 const PASSWORD = process.env.READMEABOOK_PASSWORD;
 
@@ -23,14 +22,8 @@ if (!BASE_URL) {
   process.exit(1);
 }
 
-if (!API_TOKEN && !(USERNAME && PASSWORD)) {
-  console.error(
-    [
-      "Error: authentication credentials are missing. Provide either:",
-      "  READMEABOOK_TOKEN    — API token (limited endpoint access)",
-      "  READMEABOOK_USERNAME + READMEABOOK_PASSWORD — full access via session auth",
-    ].join("\n")
-  );
+if (!USERNAME || !PASSWORD) {
+  console.error("Error: READMEABOOK_USERNAME and READMEABOOK_PASSWORD environment variables are required.");
   process.exit(1);
 }
 
@@ -47,9 +40,8 @@ const { version } = require("../package.json") as { version: string };
 
 const client = new ReadMeABookClient({
   baseUrl: BASE_URL,
-  ...(USERNAME && PASSWORD
-    ? { username: USERNAME, password: PASSWORD }
-    : { apiToken: API_TOKEN! }),
+  username: USERNAME,
+  password: PASSWORD,
 });
 
 const server = new Server(
