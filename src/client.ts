@@ -10,28 +10,70 @@ import type {
 
 export interface ReadMeABookConfig {
   baseUrl: string;
-  apiToken: string;
+  /** API token auth (limited to allowlisted endpoints) */
+  apiToken?: string;
+  /** Username/password auth — obtains a JWT that bypasses the token allowlist */
+  username?: string;
+  password?: string;
+}
+
+interface LoginResponse {
+  success: boolean;
+  accessToken: string;
+  refreshToken: string;
 }
 
 export class ReadMeABookClient {
   private readonly baseUrl: string;
-  private readonly apiToken: string;
+  private readonly apiToken: string | undefined;
+  private readonly username: string | undefined;
+  private readonly password: string | undefined;
+  private jwtToken: string | null = null;
 
   constructor(config: ReadMeABookConfig) {
     this.baseUrl = config.baseUrl.replace(/\/$/, "");
     this.apiToken = config.apiToken;
+    this.username = config.username;
+    this.password = config.password;
   }
 
-  private async request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  private async login(): Promise<void> {
+    const url = `${this.baseUrl}/api/auth/admin/login`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: this.username, password: this.password }),
+    });
+    if (!response.ok) {
+      throw new Error(`Login failed: HTTP ${response.status}`);
+    }
+    const body = (await response.json()) as LoginResponse;
+    this.jwtToken = body.accessToken;
+  }
+
+  private async request<T>(path: string, options: RequestInit = {}, isRetry = false): Promise<T> {
+    // Lazy login on first credentialed request
+    if (this.username && !this.jwtToken) {
+      await this.login();
+    }
+
+    const token = this.jwtToken ?? this.apiToken;
     const url = `${this.baseUrl}/api${path}`;
     const response = await fetch(url, {
       ...options,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiToken}`,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...options.headers,
       },
     });
+
+    // On 401 with JWT auth, re-login once and retry
+    if (response.status === 401 && this.username && !isRetry) {
+      this.jwtToken = null;
+      await this.login();
+      return this.request<T>(path, options, true);
+    }
 
     if (!response.ok) {
       let errorMessage = `HTTP ${response.status}: ${response.statusText}`;

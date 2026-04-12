@@ -15,13 +15,20 @@ import { toolDefinitions, toolHandlers } from "./tools.js";
 
 const BASE_URL = process.env.READMEABOOK_URL;
 const API_TOKEN = process.env.READMEABOOK_TOKEN;
+const USERNAME = process.env.READMEABOOK_USERNAME;
+const PASSWORD = process.env.READMEABOOK_PASSWORD;
 
-if (!BASE_URL || !API_TOKEN) {
+if (!BASE_URL) {
+  console.error("Error: READMEABOOK_URL environment variable is required.");
+  process.exit(1);
+}
+
+if (!API_TOKEN && !(USERNAME && PASSWORD)) {
   console.error(
     [
-      "Error: required environment variables are missing.",
-      "  READMEABOOK_URL   — base URL of your ReadMeABook instance (e.g. http://localhost:3000)",
-      "  READMEABOOK_TOKEN — API token from ReadMeABook › User Settings › API Tokens",
+      "Error: authentication credentials are missing. Provide either:",
+      "  READMEABOOK_TOKEN    — API token (limited endpoint access)",
+      "  READMEABOOK_USERNAME + READMEABOOK_PASSWORD — full access via session auth",
     ].join("\n")
   );
   process.exit(1);
@@ -38,7 +45,12 @@ const { version } = require("../package.json") as { version: string };
 // Server
 // ---------------------------------------------------------------------------
 
-const client = new ReadMeABookClient({ baseUrl: BASE_URL, apiToken: API_TOKEN });
+const client = new ReadMeABookClient({
+  baseUrl: BASE_URL,
+  ...(USERNAME && PASSWORD
+    ? { username: USERNAME, password: PASSWORD }
+    : { apiToken: API_TOKEN! }),
+});
 
 const server = new Server(
   { name: "readmeabook-mcp", version },
