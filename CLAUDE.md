@@ -38,6 +38,7 @@ must be expanded — this is an upstream change in ReadMeABook, not something we
    - Address all first-agent comments before invoking the second agent.
    - Second agent reviews the updated PR.
    - Only merge after both review waves are complete.
+5. **Merge & clean up** — squash-merge the PR into `main`, then delete the feature branch.
 
 ## Build & test
 
