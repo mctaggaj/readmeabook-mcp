@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      timezone: "America/Toronto"
+    commit-message:
+      prefix: "chore"
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
