@@ -11,7 +11,7 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "prepare": "npm run build && git config core.hooksPath .githooks",
+    "prepare": "npm run build && (git rev-parse --git-dir > /dev/null 2>&1 && git config core.hooksPath .githooks || true)",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"
