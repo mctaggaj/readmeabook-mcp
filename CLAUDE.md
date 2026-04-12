@@ -26,6 +26,19 @@ All other endpoints return 403. Audiobook browse/search endpoints work because t
 **public routes** that require no auth. To unlock write operations, the ReadMeABook allowlist
 must be expanded — this is an upstream change in ReadMeABook, not something we can fix here.
 
+## Git Workflow
+
+**Never commit directly to `main` or push to it.** All changes must follow this process:
+
+1. **File an issue** — create a GitHub issue describing the change before starting work.
+2. **Feature branch** — make all changes on a named feature branch (never on `main`).
+3. **Pull request** — open a PR that references the issue (e.g. `Closes #123`).
+4. **Sequential agent review** — run two isolated review agents one after another:
+   - First agent reviews the PR and leaves comments.
+   - Address all first-agent comments before invoking the second agent.
+   - Second agent reviews the updated PR.
+   - Only merge after both review waves are complete.
+
 ## Build & test
 
 ```bash
