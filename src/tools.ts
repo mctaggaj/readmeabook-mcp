@@ -30,7 +30,9 @@ function optBool(args: ToolArgs, key: string): boolean | undefined {
 
 function optInt(args: ToolArgs, key: string): number | undefined {
   const v = args[key];
-  return v !== undefined ? parseInt(String(v), 10) : undefined;
+  if (v === undefined) return undefined;
+  const n = parseInt(String(v), 10);
+  return isNaN(n) ? undefined : n;
 }
 
 // ---------------------------------------------------------------------------

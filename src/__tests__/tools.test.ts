@@ -155,6 +155,11 @@ describe("toolHandlers", () => {
     expect(client.getRequests).toHaveBeenCalledWith(3);
   });
 
+  it("get_requests passes undefined for non-numeric page", async () => {
+    await toolHandlers.get_requests(client, { page: "abc" });
+    expect(client.getRequests).toHaveBeenCalledWith(undefined);
+  });
+
   it("create_request passes asin and auto_search", async () => {
     await toolHandlers.create_request(client, { asin: "B08G9PRS1K", auto_search: false });
     expect(client.createRequest).toHaveBeenCalledWith("B08G9PRS1K", false);
