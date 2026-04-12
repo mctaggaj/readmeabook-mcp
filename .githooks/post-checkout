@@ -1,0 +1,12 @@
+#!/bin/sh
+# Run TypeScript build after branch checkout.
+# $3 is 1 for branch checkout, 0 for file checkout — skip file restores.
+# Build may fail mid-feature if the branch has type errors; that's expected.
+if [ "$3" = "1" ]; then
+  echo "Running build after checkout..."
+  npm run build
+  if [ $? -ne 0 ]; then
+    echo "Build failed — dist/ may be stale."
+    exit 1
+  fi
+fi
