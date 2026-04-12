@@ -28,6 +28,11 @@ function optBool(args: ToolArgs, key: string): boolean | undefined {
   return args[key] as boolean | undefined;
 }
 
+function optInt(args: ToolArgs, key: string): number | undefined {
+  const v = args[key];
+  return v !== undefined ? Number(v) : undefined;
+}
+
 // ---------------------------------------------------------------------------
 // Handlers
 //
@@ -55,7 +60,7 @@ export const toolHandlers: Record<string, ToolHandler> = {
   get_author_books: (client, args) => client.getAuthorBooks(str(args, "asin")),
   search_series: (client, args) => client.searchSeries(str(args, "query")),
   get_series: (client, args) => client.getSeries(str(args, "asin")),
-  get_requests: (client) => client.getRequests(),
+  get_requests: (client, args) => client.getRequests(optInt(args, "page")),
   create_request: (client, args) =>
     client.createRequest(str(args, "asin"), optBool(args, "auto_search") ?? true),
   get_request: (client, args) => client.getRequest(str(args, "id")),
@@ -85,7 +90,10 @@ export const toolHandlers: Record<string, ToolHandler> = {
     client.createApiToken(str(args, "name"), optStr(args, "expires_at")),
   delete_api_token: (client, args) => client.deleteApiToken(str(args, "id")),
   admin_get_requests: (client, args) =>
-    client.adminGetRequests(optStr(args, "status") as RequestStatus | undefined),
+    client.adminGetRequests(
+      optStr(args, "status") as RequestStatus | undefined,
+      optInt(args, "page"),
+    ),
   admin_get_pending_approval: (client) => client.adminGetPendingApproval(),
   admin_approve_request: (client, args) =>
     client.adminApproveRequest(str(args, "id"), bool(args, "approved"), optStr(args, "reason")),
@@ -124,7 +132,7 @@ export const toolDefinitions = [
   { name: "get_author_books", description: "Get all audiobooks by a specific author, ordered by release date descending. Each includes isAvailable and requestStatus.", inputSchema: { type: "object", properties: { asin: { type: "string", description: 'Author ASIN. Example: "B001H6UB6S"' } }, required: ["asin"] } },
   { name: "search_series", description: "Search for audiobook series by name. Returns: asin, title, authorName, bookCount.", inputSchema: { type: "object", properties: { query: { type: "string", description: 'Series name. Example: "Dungeon Crawler Carl"' } }, required: ["query"] } },
   { name: "get_series", description: "Get full series details including ordered book list. Each book includes asin, seriesPosition, isAvailable, requestStatus.", inputSchema: { type: "object", properties: { asin: { type: "string", description: 'Series ASIN. Example: "B07CM4FVPZ"' } }, required: ["asin"] } },
-  { name: "get_requests", description: "List all audiobook requests. Returns: id (UUID), asin, title, status (pending|awaiting_approval|denied|searching|downloading|processing|downloaded|available|failed|cancelled|awaiting_search|awaiting_import|warn), progress (0–100), createdAt (ISO 8601), errorMessage.", inputSchema: { type: "object", properties: {}, required: [] } },
+  { name: "get_requests", description: "List audiobook requests (paginated). Returns: page, pageSize, total, totalPages, items[]. Each item: id (UUID), asin, title, status (pending|awaiting_approval|denied|searching|downloading|processing|downloaded|available|failed|cancelled|awaiting_search|awaiting_import|warn), progress (0–100), createdAt (ISO 8601), errorMessage.", inputSchema: { type: "object", properties: { page: { type: "integer", description: "Page number (default: 1).", minimum: 1 } }, required: [] } },
   { name: "create_request", description: "Request an audiobook by Audible ASIN. auto_search=true (default) triggers an immediate Prowlarr search.", inputSchema: { type: "object", properties: { asin: { type: "string", description: 'Audible ASIN. Example: "B08G9PRS1K"' }, auto_search: { type: "boolean", description: "Trigger immediate search (default: true)." } }, required: ["asin"] } },
   { name: "get_request", description: "Get status and details of a specific request. Returns full request object including progress (0–100) and downloadHistory[].", inputSchema: { type: "object", properties: { id: { type: "string", description: 'Request UUID. Example: "95996919-f295-4e62-8525-0706e18d6b74"' } }, required: ["id"] } },
   { name: "delete_request", description: "Cancel and permanently delete a request. Cannot be undone.", inputSchema: { type: "object", properties: { id: { type: "string", description: 'Request UUID. Example: "95996919-f295-4e62-8525-0706e18d6b74"' } }, required: ["id"] } },
@@ -146,7 +154,7 @@ export const toolDefinitions = [
   { name: "get_api_tokens", description: "List API tokens. Returns: id, name, createdAt, expiresAt.", inputSchema: { type: "object", properties: {}, required: [] } },
   { name: "create_api_token", description: "Create a new API token. Returns the raw token value — shown only once.", inputSchema: { type: "object", properties: { name: { type: "string", description: 'Label. Example: "Home Assistant"' }, expires_at: { type: "string", description: 'ISO 8601 expiry. Example: "2027-01-01T00:00:00Z". Omit for no expiry.' } }, required: ["name"] } },
   { name: "delete_api_token", description: "Permanently revoke an API token.", inputSchema: { type: "object", properties: { id: { type: "string", description: "Token UUID." } }, required: ["id"] } },
-  { name: "admin_get_requests", description: "(Admin) List all requests across all users. Optionally filter by status.", inputSchema: { type: "object", properties: { status: { type: "string", enum: ["pending","awaiting_approval","denied","searching","downloading","processing","downloaded","available","failed","cancelled","awaiting_search","awaiting_import","warn"], description: "Filter to this status. Omit for all." } }, required: [] } },
+  { name: "admin_get_requests", description: "(Admin) List all requests across all users (paginated). Optionally filter by status. Returns: page, pageSize, total, totalPages, items[].", inputSchema: { type: "object", properties: { status: { type: "string", enum: ["pending","awaiting_approval","denied","searching","downloading","processing","downloaded","available","failed","cancelled","awaiting_search","awaiting_import","warn"], description: "Filter to this status. Omit for all." }, page: { type: "integer", description: "Page number (default: 1).", minimum: 1 } }, required: [] } },
   { name: "admin_get_pending_approval", description: "(Admin) Get all requests awaiting manual approval.", inputSchema: { type: "object", properties: {}, required: [] } },
   { name: "admin_approve_request", description: "(Admin) Approve or deny a request. Approving triggers search and download.", inputSchema: { type: "object", properties: { id: { type: "string", description: 'Request UUID. Example: "95996919-f295-4e62-8525-0706e18d6b74"' }, approved: { type: "boolean", description: "true=approve, false=deny." }, reason: { type: "string", description: "Optional denial reason shown to user." } }, required: ["id", "approved"] } },
   { name: "admin_retry_download", description: "(Admin) Retry a failed download. Resets status to 'searching'.", inputSchema: { type: "object", properties: { id: { type: "string", description: 'Request UUID. Example: "95996919-f295-4e62-8525-0706e18d6b74"' } }, required: ["id"] } },

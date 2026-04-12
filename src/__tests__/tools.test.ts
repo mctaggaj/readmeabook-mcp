@@ -147,7 +147,12 @@ describe("toolHandlers", () => {
 
   it("get_requests delegates to client", async () => {
     await toolHandlers.get_requests(client, {});
-    expect(client.getRequests).toHaveBeenCalledOnce();
+    expect(client.getRequests).toHaveBeenCalledWith(undefined);
+  });
+
+  it("get_requests passes page", async () => {
+    await toolHandlers.get_requests(client, { page: 3 });
+    expect(client.getRequests).toHaveBeenCalledWith(3);
   });
 
   it("create_request passes asin and auto_search", async () => {
@@ -262,7 +267,12 @@ describe("toolHandlers", () => {
 
   it("admin_get_requests passes status", async () => {
     await toolHandlers.admin_get_requests(client, { status: "failed" });
-    expect(client.adminGetRequests).toHaveBeenCalledWith("failed");
+    expect(client.adminGetRequests).toHaveBeenCalledWith("failed", undefined);
+  });
+
+  it("admin_get_requests passes status and page", async () => {
+    await toolHandlers.admin_get_requests(client, { status: "awaiting_search", page: 2 });
+    expect(client.adminGetRequests).toHaveBeenCalledWith("awaiting_search", 2);
   });
 
   it("admin_get_pending_approval delegates to client", async () => {

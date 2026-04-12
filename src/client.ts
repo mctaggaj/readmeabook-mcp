@@ -149,8 +149,9 @@ export class ReadMeABookClient {
 
   // --- Requests ---
 
-  getRequests() {
-    return this.request<unknown>("/requests");
+  getRequests(page?: number) {
+    const qs = page && page > 1 ? `?page=${page}` : "";
+    return this.request<unknown>(`/requests${qs}`);
   }
 
   createRequest(asin: string, autoSearch = true) {
@@ -264,8 +265,11 @@ export class ReadMeABookClient {
 
   // --- Admin: Requests ---
 
-  adminGetRequests(status?: RequestStatus) {
-    const qs = status ? `?status=${encodeURIComponent(status)}` : "";
+  adminGetRequests(status?: RequestStatus, page?: number) {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    if (page && page > 1) params.set("page", String(page));
+    const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request<unknown>(`/admin/requests${qs}`);
   }
 
