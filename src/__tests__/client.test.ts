@@ -258,9 +258,27 @@ describe("ReadMeABookClient", () => {
   // ── Requests ──────────────────────────────────────────────────────────────
 
   describe("getRequests", () => {
-    it("GETs /requests", async () => {
+    it("GETs /requests without page param by default", async () => {
       ok([]);
       await makeClient().getRequests();
+      expect(lastCall()[0]).toBe(`${BASE}/api/requests`);
+    });
+
+    it("omits page param when page=1", async () => {
+      ok([]);
+      await makeClient().getRequests(1);
+      expect(lastCall()[0]).toBe(`${BASE}/api/requests`);
+    });
+
+    it("appends page query param when page > 1", async () => {
+      ok([]);
+      await makeClient().getRequests(2);
+      expect(lastCall()[0]).toBe(`${BASE}/api/requests?page=2`);
+    });
+
+    it("omits page param when page=0", async () => {
+      ok([]);
+      await makeClient().getRequests(0);
       expect(lastCall()[0]).toBe(`${BASE}/api/requests`);
     });
   });
@@ -505,7 +523,7 @@ describe("ReadMeABookClient", () => {
   // ── Admin: Requests ───────────────────────────────────────────────────────
 
   describe("adminGetRequests", () => {
-    it("GETs /admin/requests without status", async () => {
+    it("GETs /admin/requests without params by default", async () => {
       ok([]);
       await makeClient().adminGetRequests();
       expect(lastCall()[0]).toBe(`${BASE}/api/admin/requests`);
@@ -514,6 +532,32 @@ describe("ReadMeABookClient", () => {
     it("appends status query param when provided", async () => {
       ok([]);
       await makeClient().adminGetRequests("failed");
+      expect(lastCall()[0]).toBe(`${BASE}/api/admin/requests?status=failed`);
+    });
+
+    it("appends page query param when page > 1", async () => {
+      ok([]);
+      await makeClient().adminGetRequests(undefined, 2);
+      expect(lastCall()[0]).toBe(`${BASE}/api/admin/requests?page=2`);
+    });
+
+    it("appends both status and page when provided", async () => {
+      ok([]);
+      await makeClient().adminGetRequests("awaiting_search", 2);
+      expect(lastCall()[0]).toBe(
+        `${BASE}/api/admin/requests?status=awaiting_search&page=2`
+      );
+    });
+
+    it("omits page param when page=1", async () => {
+      ok([]);
+      await makeClient().adminGetRequests("failed", 1);
+      expect(lastCall()[0]).toBe(`${BASE}/api/admin/requests?status=failed`);
+    });
+
+    it("omits page param when page=0", async () => {
+      ok([]);
+      await makeClient().adminGetRequests("failed", 0);
       expect(lastCall()[0]).toBe(`${BASE}/api/admin/requests?status=failed`);
     });
   });
