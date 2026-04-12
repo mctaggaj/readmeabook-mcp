@@ -150,7 +150,9 @@ export class ReadMeABookClient {
   // --- Requests ---
 
   getRequests(page?: number) {
-    const qs = page && page > 1 ? `?page=${page}` : "";
+    const params = new URLSearchParams();
+    if (page && page > 1) params.set("page", String(page));
+    const qs = params.toString() ? `?${params.toString()}` : "";
     return this.request<unknown>(`/requests${qs}`);
   }
 

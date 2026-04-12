@@ -275,6 +275,12 @@ describe("ReadMeABookClient", () => {
       await makeClient().getRequests(2);
       expect(lastCall()[0]).toBe(`${BASE}/api/requests?page=2`);
     });
+
+    it("omits page param when page=0", async () => {
+      ok([]);
+      await makeClient().getRequests(0);
+      expect(lastCall()[0]).toBe(`${BASE}/api/requests`);
+    });
   });
 
   describe("createRequest", () => {
@@ -546,6 +552,12 @@ describe("ReadMeABookClient", () => {
     it("omits page param when page=1", async () => {
       ok([]);
       await makeClient().adminGetRequests("failed", 1);
+      expect(lastCall()[0]).toBe(`${BASE}/api/admin/requests?status=failed`);
+    });
+
+    it("omits page param when page=0", async () => {
+      ok([]);
+      await makeClient().adminGetRequests("failed", 0);
       expect(lastCall()[0]).toBe(`${BASE}/api/admin/requests?status=failed`);
     });
   });
