@@ -3,10 +3,10 @@
 # $3 is 1 for branch checkout, 0 for file checkout — skip file restores.
 # Build may fail mid-feature if the branch has type errors; that's expected.
 if [ "$3" = "1" ]; then
-  echo "Running npm install after checkout..."
-  npm install
+  echo "Running npm ci after checkout..."
+  npm ci
   if [ $? -ne 0 ]; then
-    echo "npm install failed."
+    echo "npm ci failed — node_modules may be out of date."
     exit 1
   fi
   echo "Running build after checkout..."
