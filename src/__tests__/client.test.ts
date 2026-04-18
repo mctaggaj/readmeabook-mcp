@@ -6,22 +6,13 @@ import { ReadMeABookClient } from "../client.js";
 // ---------------------------------------------------------------------------
 
 const BASE = "http://localhost:3000";
-const USERNAME = "testuser";
-const PASSWORD = "testpass";
-const JWT_TOKEN = "test-jwt-token";
+const TOKEN = "test-token";
 
 function makeClient() {
-  return new ReadMeABookClient({ baseUrl: BASE, username: USERNAME, password: PASSWORD });
+  return new ReadMeABookClient({ baseUrl: BASE, apiToken: TOKEN });
 }
 
 const mockFetch = vi.fn();
-
-function loginOk() {
-  mockFetch.mockResolvedValueOnce({
-    ok: true,
-    json: () => Promise.resolve({ success: true, accessToken: JWT_TOKEN, refreshToken: "refresh-token" }),
-  });
-}
 
 function ok(data: unknown) {
   mockFetch.mockResolvedValueOnce({
@@ -55,7 +46,6 @@ function lastCall() {
 
 beforeEach(() => {
   vi.stubGlobal("fetch", mockFetch);
-  loginOk(); // every test gets a login mock — client authenticates on first request
 });
 
 afterEach(() => {
@@ -70,7 +60,7 @@ afterEach(() => {
 describe("ReadMeABookClient", () => {
   describe("constructor", () => {
     it("strips trailing slash from baseUrl", async () => {
-      const c = new ReadMeABookClient({ baseUrl: `${BASE}/`, username: USERNAME, password: PASSWORD });
+      const c = new ReadMeABookClient({ baseUrl: `${BASE}/`, apiToken: TOKEN });
       ok({ status: "ok" });
       await c.getHealth();
       expect(lastCall()[0]).toBe(`${BASE}/api/health`);
@@ -83,7 +73,7 @@ describe("ReadMeABookClient", () => {
       await makeClient().getHealth();
       const [, init] = lastCall();
       expect((init.headers as Record<string, string>)["Authorization"]).toBe(
-        `Bearer ${JWT_TOKEN}`
+        `Bearer ${TOKEN}`
       );
       expect((init.headers as Record<string, string>)["Content-Type"]).toBe(
         "application/json"
@@ -377,7 +367,7 @@ describe("ReadMeABookClient", () => {
       async (action) => {
         ok({});
         await makeClient().swipeBookDate("rec-uuid", action);
-        expect(mockFetch).toHaveBeenCalledTimes(2); // login + swipe
+        expect(mockFetch).toHaveBeenCalledOnce();
       }
     );
   });

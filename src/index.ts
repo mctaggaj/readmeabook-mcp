@@ -14,16 +14,15 @@ import { toolDefinitions, toolHandlers } from "./tools.js";
 // ---------------------------------------------------------------------------
 
 const BASE_URL = process.env.READMEABOOK_URL;
-const USERNAME = process.env.READMEABOOK_USERNAME;
-const PASSWORD = process.env.READMEABOOK_PASSWORD;
+const API_TOKEN = process.env.READMEABOOK_TOKEN;
 
 if (!BASE_URL) {
   console.error("Error: READMEABOOK_URL environment variable is required.");
   process.exit(1);
 }
 
-if (!USERNAME || !PASSWORD) {
-  console.error("Error: READMEABOOK_USERNAME and READMEABOOK_PASSWORD environment variables are required.");
+if (!API_TOKEN) {
+  console.error("Error: READMEABOOK_TOKEN environment variable is required.");
   process.exit(1);
 }
 
@@ -40,8 +39,7 @@ const { version } = require("../package.json") as { version: string };
 
 const client = new ReadMeABookClient({
   baseUrl: BASE_URL,
-  username: USERNAME,
-  password: PASSWORD,
+  apiToken: API_TOKEN,
 });
 
 const server = new Server(

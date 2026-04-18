@@ -9,8 +9,8 @@
 
 ## Branches
 
-- `main` — 9 confirmed-working tools (allowlisted or public routes only)
-- `all-endpoints` — full 46-tool implementation; activate once ReadMeABook's API token allowlist is expanded
+- `main` — stable; API token auth only; full 46-tool set (blocked endpoints return 403 until upstream allowlist is expanded — tracked in kikootwo/ReadMeABook#176)
+- `revert-to-api-key-auth` — PR #1; cleans up session auth workaround
 
 ## Why most endpoints are blocked
 
