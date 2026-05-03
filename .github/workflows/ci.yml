@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     name: Build & Test
@@ -45,6 +48,7 @@ jobs:
     name: Coverage regression check
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    needs: [ci]
 
     steps:
       # --- baseline: main branch ---
@@ -54,11 +58,12 @@ jobs:
           ref: main
           path: main-branch
 
-      - name: Set up Node
+      - name: Set up Node (main)
         uses: actions/setup-node@v4
         with:
           node-version-file: main-branch/.nvmrc
           cache: npm
+          cache-dependency-path: main-branch/package-lock.json
 
       - name: Install dependencies (main)
         run: npm ci
@@ -71,13 +76,18 @@ jobs:
       - name: Extract baseline coverage
         id: baseline
         run: |
-          PCT=$(node -e "
+          SUMMARY=$(node -e "
             import { readFileSync } from 'fs';
             const s = JSON.parse(readFileSync('./main-branch/coverage/coverage-summary.json', 'utf8'));
-            console.log(s.total.lines.pct);
+            console.log(JSON.stringify({
+              statements: s.total.statements.pct,
+              branches:   s.total.branches.pct,
+              functions:  s.total.functions.pct,
+              lines:      s.total.lines.pct,
+            }));
           " --input-type=module)
-          echo "pct=$PCT" >> "$GITHUB_OUTPUT"
-          echo "Baseline (main) line coverage: $PCT%"
+          echo "summary=$SUMMARY" >> "$GITHUB_OUTPUT"
+          echo "Baseline (main) coverage: $SUMMARY"
 
       # --- PR branch ---
       - name: Checkout PR branch
@@ -85,6 +95,13 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           path: pr-branch
+
+      - name: Set up Node (PR)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: pr-branch/.nvmrc
+          cache: npm
+          cache-dependency-path: pr-branch/package-lock.json
 
       - name: Install dependencies (PR)
         run: npm ci
@@ -97,34 +114,45 @@ jobs:
       - name: Extract PR coverage
         id: pr
         run: |
-          PCT=$(node -e "
+          SUMMARY=$(node -e "
             import { readFileSync } from 'fs';
             const s = JSON.parse(readFileSync('./pr-branch/coverage/coverage-summary.json', 'utf8'));
-            console.log(s.total.lines.pct);
+            console.log(JSON.stringify({
+              statements: s.total.statements.pct,
+              branches:   s.total.branches.pct,
+              functions:  s.total.functions.pct,
+              lines:      s.total.lines.pct,
+            }));
           " --input-type=module)
-          echo "pct=$PCT" >> "$GITHUB_OUTPUT"
-          echo "PR line coverage: $PCT%"
+          echo "summary=$SUMMARY" >> "$GITHUB_OUTPUT"
+          echo "PR coverage: $SUMMARY"
 
       # --- compare ---
       - name: Compare coverage
+        env:
+          BASELINE: ${{ steps.baseline.outputs.summary }}
+          PR_COVERAGE: ${{ steps.pr.outputs.summary }}
         run: |
-          BASELINE=${{ steps.baseline.outputs.pct }}
-          PR=${{ steps.pr.outputs.pct }}
-          echo "Baseline (main): ${BASELINE}%"
-          echo "This PR:         ${PR}%"
           node -e "
-            const base = parseFloat('$BASELINE');
-            const pr   = parseFloat('$PR');
-            if (pr < base) {
+            const base = JSON.parse(process.env.BASELINE);
+            const pr   = JSON.parse(process.env.PR_COVERAGE);
+            const metrics = ['statements', 'branches', 'functions', 'lines'];
+            const regressions = [];
+            for (const m of metrics) {
+              const delta = pr[m] - base[m];
+              const line = m.padEnd(11) + ' main: ' + base[m].toFixed(2) + '%  PR: ' + pr[m].toFixed(2) + '%  delta: ' + (delta >= 0 ? '+' : '') + delta.toFixed(2) + '%';
+              if (pr[m] < base[m]) {
+                regressions.push(line);
+                console.error('REGRESSION  ' + line);
+              } else {
+                console.log('OK          ' + line);
+              }
+            }
+            if (regressions.length > 0) {
               console.error('');
-              console.error('Coverage regression detected!');
-              console.error('  main:     ' + base + '%');
-              console.error('  this PR:  ' + pr   + '%');
-              console.error('  delta:    ' + (pr - base).toFixed(2) + '%');
-              console.error('');
+              console.error('Coverage regression detected on ' + regressions.length + ' metric(s).');
               console.error('Please add tests to maintain or improve coverage before merging.');
               process.exit(1);
             }
-            const delta = pr - base;
-            console.log('Coverage OK: ' + pr + '% (main: ' + base + '%, delta: +' + delta.toFixed(2) + '%)');
-          "
+            console.log('All coverage metrics maintained or improved.');
+          " --input-type=module
