@@ -1,8 +1,12 @@
 # readmeabook-mcp
 
+[![CI](https://github.com/mctaggaj/readmeabook-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/mctaggaj/readmeabook-mcp/actions/workflows/ci.yml)
+
 An MCP (Model Context Protocol) server for [ReadMeABook](https://github.com/kikootwo/readmeabook) — the Radarr/Sonarr + Overseerr for audiobooks.
 
 Lets Claude (or any MCP-compatible AI client) search for audiobooks, view requests, and monitor downloads.
+
+**Requires Node.js 25.x** (see `.nvmrc` for the exact development pin). Node 25 is the current release line; Node 26 LTS is expected October 2026 and the pin will move to 26.x at that point.
 
 > **Note:** ReadMeABook's API token auth is restricted to a small allowlist of endpoints (see `src/lib/constants/api-tokens.ts` in the ReadMeABook source). Only the 9 endpoints on that allowlist — or public routes — are exposed here. A full endpoint set is available on the `all-endpoints` branch for use if that allowlist is expanded.
 
@@ -56,3 +60,16 @@ Restart Claude Code after running this command.
 ### Admin
 - `admin_get_metrics` — System-wide stats (requests, users, storage, uptime)
 - `admin_get_active_downloads` — Live download progress across all clients
+
+## Releases
+
+Releases are published to npm automatically. To cut a new release:
+
+```bash
+npm version patch   # or minor / major
+git push --follow-tags
+```
+
+Always use `npm version` rather than tagging by hand — it bumps `package.json` and creates the matching `v<version>` tag in a single atomic commit, which keeps the tag and `package.json` version in lock-step. The release workflow has a guard that fails the publish if the pushed tag doesn't match the version in `package.json`, so a manual tag that drifts from the package version will be rejected.
+
+Pushing a `v*` tag triggers the release workflow, which builds the package and publishes it to npm with provenance attestation. Make sure the `NPM_TOKEN` repository secret is set before the first release.
