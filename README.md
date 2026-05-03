@@ -1,8 +1,12 @@
 # readmeabook-mcp
 
+[![CI](https://github.com/mctaggaj/readmeabook-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/mctaggaj/readmeabook-mcp/actions/workflows/ci.yml)
+
 An MCP (Model Context Protocol) server for [ReadMeABook](https://github.com/kikootwo/readmeabook) — the Radarr/Sonarr + Overseerr for audiobooks.
 
 Lets Claude (or any MCP-compatible AI client) search for audiobooks, view requests, and monitor downloads.
+
+**Requires Node.js ≥ 25.9.0.**
 
 > **Note:** ReadMeABook's API token auth is restricted to a small allowlist of endpoints (see `src/lib/constants/api-tokens.ts` in the ReadMeABook source). Only the 9 endpoints on that allowlist — or public routes — are exposed here. A full endpoint set is available on the `all-endpoints` branch for use if that allowlist is expanded.
 
@@ -56,3 +60,14 @@ Restart Claude Code after running this command.
 ### Admin
 - `admin_get_metrics` — System-wide stats (requests, users, storage, uptime)
 - `admin_get_active_downloads` — Live download progress across all clients
+
+## Releases
+
+Releases are published to npm automatically. To cut a new release:
+
+```bash
+npm version patch   # or minor / major
+git push --follow-tags
+```
+
+Pushing a `v*` tag triggers the release workflow, which builds the package and publishes it to npm with provenance attestation. Make sure the `NPM_TOKEN` repository secret is set before the first release.
