@@ -40,3 +40,91 @@ jobs:
           name: coverage
           path: coverage/
           retention-days: 30
+
+  coverage-regression:
+    name: Coverage regression check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      # --- baseline: main branch ---
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-branch
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: main-branch/.nvmrc
+          cache: npm
+
+      - name: Install dependencies (main)
+        run: npm ci
+        working-directory: main-branch
+
+      - name: Run coverage (main)
+        run: npm run test:coverage
+        working-directory: main-branch
+
+      - name: Extract baseline coverage
+        id: baseline
+        run: |
+          PCT=$(node -e "
+            import { readFileSync } from 'fs';
+            const s = JSON.parse(readFileSync('./main-branch/coverage/coverage-summary.json', 'utf8'));
+            console.log(s.total.lines.pct);
+          " --input-type=module)
+          echo "pct=$PCT" >> "$GITHUB_OUTPUT"
+          echo "Baseline (main) line coverage: $PCT%"
+
+      # --- PR branch ---
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr-branch
+
+      - name: Install dependencies (PR)
+        run: npm ci
+        working-directory: pr-branch
+
+      - name: Run coverage (PR)
+        run: npm run test:coverage
+        working-directory: pr-branch
+
+      - name: Extract PR coverage
+        id: pr
+        run: |
+          PCT=$(node -e "
+            import { readFileSync } from 'fs';
+            const s = JSON.parse(readFileSync('./pr-branch/coverage/coverage-summary.json', 'utf8'));
+            console.log(s.total.lines.pct);
+          " --input-type=module)
+          echo "pct=$PCT" >> "$GITHUB_OUTPUT"
+          echo "PR line coverage: $PCT%"
+
+      # --- compare ---
+      - name: Compare coverage
+        run: |
+          BASELINE=${{ steps.baseline.outputs.pct }}
+          PR=${{ steps.pr.outputs.pct }}
+          echo "Baseline (main): ${BASELINE}%"
+          echo "This PR:         ${PR}%"
+          node -e "
+            const base = parseFloat('$BASELINE');
+            const pr   = parseFloat('$PR');
+            if (pr < base) {
+              console.error('');
+              console.error('Coverage regression detected!');
+              console.error('  main:     ' + base + '%');
+              console.error('  this PR:  ' + pr   + '%');
+              console.error('  delta:    ' + (pr - base).toFixed(2) + '%');
+              console.error('');
+              console.error('Please add tests to maintain or improve coverage before merging.');
+              process.exit(1);
+            }
+            const delta = pr - base;
+            console.log('Coverage OK: ' + pr + '% (main: ' + base + '%, delta: +' + delta.toFixed(2) + '%)');
+          "
