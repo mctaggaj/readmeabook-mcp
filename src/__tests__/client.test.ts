@@ -115,6 +115,41 @@ describe("ReadMeABookClient", () => {
         "HTTP 500: Internal Server Error"
       );
     });
+
+    it("throws when login itself fails", async () => {
+      // Override the loginOk() queued in beforeEach with a failing login response
+      mockFetch.mockReset();
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 401 });
+      await expect(makeClient().getHealth()).rejects.toThrow(
+        "Login failed: HTTP 401"
+      );
+    });
+
+    it("re-logs in and retries once on 401", async () => {
+      // Sequence: initial login (from beforeEach) → request 401 → re-login → request ok
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 401, statusText: "Unauthorized" });
+      loginOk();
+      ok({ status: "ok" });
+      const result = await makeClient().getHealth();
+      expect(result).toEqual({ status: "ok" });
+      // 1 initial login + 1 first request (401) + 1 re-login + 1 retry request = 4
+      expect(mockFetch).toHaveBeenCalledTimes(4);
+    });
+
+    it("does not retry a second time if 401 persists", async () => {
+      // Sequence: initial login → 401 → re-login → 401 again should propagate as error
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 401, statusText: "Unauthorized" });
+      loginOk();
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        statusText: "Unauthorized",
+        json: () => Promise.reject(new Error("not json")),
+      });
+      await expect(makeClient().getHealth()).rejects.toThrow(
+        "HTTP 401: Unauthorized"
+      );
+    });
   });
 
   // ── System ────────────────────────────────────────────────────────────────
