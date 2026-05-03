@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 30
+
+  coverage-regression:
+    name: Coverage regression check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: [ci]
+
+    steps:
+      # --- baseline: main branch ---
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main-branch
+
+      - name: Set up Node (main)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: main-branch/.nvmrc
+          cache: npm
+          cache-dependency-path: main-branch/package-lock.json
+
+      - name: Install dependencies (main)
+        run: npm ci
+        working-directory: main-branch
+
+      - name: Run coverage (main)
+        run: npm run test:coverage
+        working-directory: main-branch
+
+      - name: Extract baseline coverage
+        id: baseline
+        run: |
+          SUMMARY=$(node -e "
+            import { readFileSync } from 'fs';
+            const s = JSON.parse(readFileSync('./main-branch/coverage/coverage-summary.json', 'utf8'));
+            console.log(JSON.stringify({
+              statements: s.total.statements.pct,
+              branches:   s.total.branches.pct,
+              functions:  s.total.functions.pct,
+              lines:      s.total.lines.pct,
+            }));
+          " --input-type=module)
+          echo "summary=$SUMMARY" >> "$GITHUB_OUTPUT"
+          echo "Baseline (main) coverage: $SUMMARY"
+
+      # --- PR branch ---
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: pr-branch
+
+      - name: Set up Node (PR)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: pr-branch/.nvmrc
+          cache: npm
+          cache-dependency-path: pr-branch/package-lock.json
+
+      - name: Install dependencies (PR)
+        run: npm ci
+        working-directory: pr-branch
+
+      - name: Run coverage (PR)
+        run: npm run test:coverage
+        working-directory: pr-branch
+
+      - name: Extract PR coverage
+        id: pr
+        run: |
+          SUMMARY=$(node -e "
+            import { readFileSync } from 'fs';
+            const s = JSON.parse(readFileSync('./pr-branch/coverage/coverage-summary.json', 'utf8'));
+            console.log(JSON.stringify({
+              statements: s.total.statements.pct,
+              branches:   s.total.branches.pct,
+              functions:  s.total.functions.pct,
+              lines:      s.total.lines.pct,
+            }));
+          " --input-type=module)
+          echo "summary=$SUMMARY" >> "$GITHUB_OUTPUT"
+          echo "PR coverage: $SUMMARY"
+
+      # --- compare ---
+      - name: Compare coverage
+        env:
+          BASELINE: ${{ steps.baseline.outputs.summary }}
+          PR_COVERAGE: ${{ steps.pr.outputs.summary }}
+        run: |
+          node -e "
+            const base = JSON.parse(process.env.BASELINE);
+            const pr   = JSON.parse(process.env.PR_COVERAGE);
+            const metrics = ['statements', 'branches', 'functions', 'lines'];
+            const regressions = [];
+            for (const m of metrics) {
+              const delta = pr[m] - base[m];
+              const line = m.padEnd(11) + ' main: ' + base[m].toFixed(2) + '%  PR: ' + pr[m].toFixed(2) + '%  delta: ' + (delta >= 0 ? '+' : '') + delta.toFixed(2) + '%';
+              if (pr[m] < base[m]) {
+                regressions.push(line);
+                console.error('REGRESSION  ' + line);
+              } else {
+                console.log('OK          ' + line);
+              }
+            }
+            if (regressions.length > 0) {
+              console.error('');
+              console.error('Coverage regression detected on ' + regressions.length + ' metric(s).');
+              console.error('Please add tests to maintain or improve coverage before merging.');
+              process.exit(1);
+            }
+            console.log('All coverage metrics maintained or improved.');
+          " --input-type=module
